@@ -1,0 +1,2 @@
+export const WELCOME = 'WELCOME';
+export const SCHEDULE_EXECUTED = 'SCHEDULE_EXECUTED';

@@ -1,0 +1,2 @@
+export const SCHEDULE_CRON_OCCURRENCES = '0 0 * * *';
+export const SCHEDULE_ADVISORY_LOCK_KEY = 0x7363686564;

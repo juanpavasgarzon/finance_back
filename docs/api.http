@@ -1,0 +1,163 @@
+# Finance API – Archivo .http (REST Client en VS Code o JetBrains)
+# Envía cada bloque con "Send Request". Tras ejecutar "2. Login", copia accessToken aquí abajo en @token.
+
+@baseUrl = http://localhost:3001/api
+@email = user@example.com
+@password = password123
+# Pegar aquí el accessToken después de ejecutar "2. Login":
+@token = your_jwt_token_here
+
+### 1. Registro (público)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 2. Login (público)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 3. Crear categoría EXPENSE - Supermercado
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Supermercado",
+  "type": "EXPENSE"
+}
+
+### 4. Crear categoría EXPENSE - Transporte
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Transporte",
+  "type": "EXPENSE"
+}
+
+### 5. Crear categoría INCOME - Salario
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Salario",
+  "type": "INCOME"
+}
+
+### 6. Listar categorías EXPENSE
+GET {{baseUrl}}/categories?type=EXPENSE
+Authorization: Bearer {{token}}
+
+### 7. Listar categorías INCOME
+GET {{baseUrl}}/categories?type=INCOME
+Authorization: Bearer {{token}}
+
+### 8. Crear schedule egreso (mensual) - Reemplaza categoryId por un id real de categoría EXPENSE
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "categoryId": "REPLACE_WITH_EXPENSE_CATEGORY_ID",
+  "type": "EXPENSE",
+  "amount": 150000,
+  "currencyCode": "COP",
+  "recurrenceInterval": 1,
+  "recurrenceUnit": "MONTH",
+  "nextDueDate": "2025-02-01",
+  "description": "Alquiler mensual"
+}
+
+### 9. Crear schedule ingreso (quincenal) - Reemplaza categoryId por un id real de categoría INCOME
+POST {{baseUrl}}/schedules
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "categoryId": "REPLACE_WITH_INCOME_CATEGORY_ID",
+  "type": "INCOME",
+  "amount": 2500000,
+  "currencyCode": "COP",
+  "recurrenceInterval": 2,
+  "recurrenceUnit": "WEEK",
+  "nextDueDate": "2025-02-15",
+  "description": "Nómina quincenal"
+}
+
+### 10. Listar schedules del usuario
+GET {{baseUrl}}/schedules
+Authorization: Bearer {{token}}
+
+### 11. Ejecutar generación de ocurrencias (schedules)
+POST {{baseUrl}}/schedules/generate
+Authorization: Bearer {{token}}
+
+### 12. Crear egreso manual - Reemplaza categoryId por id real
+POST {{baseUrl}}/expenses
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "categoryId": "REPLACE_WITH_EXPENSE_CATEGORY_ID",
+  "amount": 85000,
+  "currencyCode": "COP",
+  "description": "Mercado semanal",
+  "dueDate": "2025-02-18"
+}
+
+### 13. Crear ingreso manual - Reemplaza categoryId por id real
+POST {{baseUrl}}/incomes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "categoryId": "REPLACE_WITH_INCOME_CATEGORY_ID",
+  "amount": 5000000,
+  "currencyCode": "COP",
+  "description": "Salario febrero",
+  "dueDate": "2025-02-28"
+}
+
+### 14. Listar egresos
+GET {{baseUrl}}/expenses
+Authorization: Bearer {{token}}
+
+### 15. Listar ingresos
+GET {{baseUrl}}/incomes
+Authorization: Bearer {{token}}
+
+### 16. Obtener egreso por id - Reemplaza expenseId
+GET {{baseUrl}}/expenses/REPLACE_WITH_EXPENSE_ID
+Authorization: Bearer {{token}}
+
+### 17. Obtener ingreso por id - Reemplaza incomeId
+GET {{baseUrl}}/incomes/REPLACE_WITH_INCOME_ID
+Authorization: Bearer {{token}}
+
+### 18. Marcar egreso como pagado - Reemplaza expenseId
+PATCH {{baseUrl}}/expenses/REPLACE_WITH_EXPENSE_ID/paid
+Authorization: Bearer {{token}}
+
+### 19. Marcar ingreso como cobrado - Reemplaza incomeId
+PATCH {{baseUrl}}/incomes/REPLACE_WITH_INCOME_ID/paid
+Authorization: Bearer {{token}}
+
+### 20. Dashboard (reporte por período)
+GET {{baseUrl}}/reports/dashboard?period=MONTHLY&date=2025-02-18
+Authorization: Bearer {{token}}
+
+### 21. Descargar Excel
+GET {{baseUrl}}/reports/financial/excel?period=MONTHLY&date=2025-02-18
+Authorization: Bearer {{token}}

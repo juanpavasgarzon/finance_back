@@ -1,0 +1,214 @@
+---
+description: Estándares de código TypeScript/Node, SOLID y convenciones del proyecto finance_back. Aplica a todo el código bajo src/ (incluyendo src/shared).
+globs: src/**/*.ts
+alwaysApply: true
+---
+
+# Estándares de codificación (Node/TypeScript)
+
+## Contexto del proyecto (finance_back)
+
+- **Stack:** NestJS, TypeORM, PostgreSQL, Passport/JWT, class-validator, config con `registerAs`.
+- **Estructura raíz en `src/`:**
+  - **`config/`** — ConfigModule global, `app.config.ts`, `database.config.ts`, `jwt.config.ts`, `env.validation.ts` (Joi). Carga con `registerAs('app', () => ({ ... }))`.
+  - **`database/`** — DatabaseModule global, `data-source.ts` para CLI de TypeORM, `migrations/`. Sin repositorios propios; use cases inyectan `@InjectRepository(Entity)`.
+  - **`shared/`** — Constantes globales (p. ej. `constants/currency.constants.ts`), decoradores (`decorators/current-user-id.decorator.ts`), filtros (`filters/all-exceptions.filter.ts`), middleware (`middleware/http-request-logger.ts`). Barrel en `shared/index.ts`.
+  - **`modules/`** — Un módulo por dominio: `users`, `categories`, `expenses`, `income`, `schedules`, `auth`, `legal`. Cada módulo con estructura plana (ver más abajo).
+- **Path aliases (tsconfig):** `shared` y `shared/*` → `src/shared`; `modules/*` → `src/modules/*`. Imports desde otros módulos o shared usan estos alias; dentro del mismo módulo solo rutas relativas con **máximo `../..`** (p. ej. `../entities/expense.entity`, `../dto/request/expense-create.request`).
+- **Multi-tenant:** Todas las entidades de negocio llevan `userId` (columna tenant). Un usuario no ve ni cruza datos de otro; filtrar siempre por `userId` en use cases.
+- **Trazabilidad de pagos:** Gastos e ingresos tienen `paidAt`; los generados por schedules se crean con `paidAt: null` y el usuario debe marcarlos como pagados explícitamente (PATCH `.../paid`).
+
+## Linter y formato (obligatorio)
+
+- **Antes de dar por cerrado un cambio:** ejecutar `npm run lint` y `npm run format` y corregir todos los errores y avisos.
+- Resolver primero los errores de lint; luego ejecutar format. El formato debe ser consistente en todo el proyecto.
+
+## Comentarios
+
+- **Cero comentarios** en el código: no usar `//` ni `/** ... */`. El código debe ser autodescriptivo (nombres claros, funciones pequeñas). Si hace falta explicar algo, mejorar nombres o extraer lógica en lugar de comentar.
+
+## SOLID
+
+- **S (Single Responsibility):** Una clase/función una sola razón para cambiar. Use cases con una acción clara; servicios como fachada que solo delegan; controladores solo orquestan request → use case → response.
+- **O (Open/Closed):** Extender por nuevos use cases o DTOs en lugar de modificar código existente; preferir composición e inyección antes que ramas con `if (tipo)`.
+- **L (Liskov Substitution):** Las implementaciones de una interfaz o extensiones de una clase base deben ser sustituibles sin romper el contrato.
+- **I (Interface Segregation):** Interfaces y DTOs pequeños y específicos; no obligar a dependencias a métodos que no usan.
+- **D (Dependency Inversion):** Depender de abstracciones; los módulos de alto nivel no dependen de detalles de implementación sino de contratos.
+
+**Ejemplo en el proyecto:** `ExpenseController` solo orquesta: recibe `ExpenseCreateRequest`, llama a `CreateExpenseUseCase.execute()`, devuelve `new ExpenseResponse(expense)`. La lógica de creación y reglas (p. ej. `paidAt: null`) vive en `CreateExpenseUseCase`.
+
+## Tipado estricto (nunca sin tipar)
+
+- **Nunca dejar elementos sin tipar:** parámetros, retornos, variables con valor no obvio, propiedades de objetos y callbacks deben tener tipo explícito o inferible sin `any`.
+- **Prohibido `any`** salvo integración con librerías sin tipos; usar `unknown` y narrowing.
+- **Retornos de funciones y métodos:** siempre tipar con **interfaces/tipos nombrados** definidos en `contracts/`. Prohibido usar tipos inline (p. ej. `Promise<{ accessToken: string }>`); crear `LoginResult` en `contracts/login-result.interface.ts` y usar `Promise<LoginResult>`.
+- **Interfaces para contratos:** todos los payloads, resultados y parámetros complejos son interfaces en `contracts/`; tipos de dominio en `constants/` o en `contracts/` según corresponda.
+- **Evitar `as`:** preferir narrowing o tipos bien definidos; reservar `as` para casos excepcionales.
+
+**Ejemplo en el proyecto:** `CreateExpenseUseCase` recibe `CreateExpenseInput` (interface) y retorna `Promise<Expense>`. Los DTOs usan constantes del módulo que corresponda (p. ej. `modules/categories` para `CATEGORY_TYPES`). El decorador `CurrentUserId` tipa el request con `RequestWithUser` para no usar `any`.
+
+## Condicionales: poca condicionalidad y sin else
+
+- **Evitar `else`:** usar early return; invertir la condición y salir pronto.
+- **Baja condicionalidad:** evitar anidación de `if` (máximo 2 niveles); extraer a funciones privadas o use cases con nombres descriptivos. Para muchos casos, valorar estrategias o mapeos (objeto/Map) en lugar de ramas.
+- **Siempre bloque con llaves** en `if`/`else`; no escribir `if (x) return;` en una sola línea sin llaves.
+- **Un `return` por ruta lógica** cuando sea posible; early returns al inicio del método.
+
+**Ejemplo en el proyecto:** `addRecurrence` en `schedules/use-cases/next-due-date.util.ts` usa `switch` por unidad (DAY, WEEK, MONTH, YEAR) sin else; cada rama hace una cosa y retorna.
+
+## Sin desestructuración
+
+- **No usar desestructuración** para asignar variables a partir del resultado de una función o de un objeto. Acceder siempre por la referencia al resultado.
+- Incorrecto: `const { accessToken } = await this.loginUseCase.execute(...); return new LoginResponse(accessToken);`
+- Correcto: `const result = await this.loginUseCase.execute(...); return new LoginResponse(result.accessToken);`
+- Incorrecto: `const { method, originalUrl, ip } = request;`
+- Correcto: usar `request.method`, `request.originalUrl`, `request.ip` (o asignar `const requestData = request` y luego `requestData.method`, etc. si se necesita una variable).
+
+## Nombres y legibilidad
+
+- **Repositorios inyectados:** nombre completo del modelo + Repository: `expenseRepository`, `categoryRepository`, `scheduleRepository` (nunca `repo` ni abreviaturas).
+- Nombres descriptivos: variables, parámetros y propiedades autodescriptivos.
+- Funciones y métodos: verbo + sustantivo (`findById`, `createExpense`, `markExpenseAsPaid`).
+- Booleanos: prefijos `is`, `has`, `can` cuando aplique.
+
+## Async/await y errores
+
+- Usar siempre `async/await`; evitar callbacks y `.then()` en código nuevo.
+- En capa de aplicación, lanzar excepciones HTTP de NestJS (`NotFoundException`, `BadRequestException`, etc.) en lugar de `throw new Error()` genérico.
+- En `catch`, registrar el error y re-lanzar o transformar; no dejar `catch (e) {}` vacío.
+
+**Ejemplo en el proyecto:** `GetExpenseByIdUseCase` y `MarkExpenseAsPaidUseCase` lanzan `NotFoundException('Expense not found')` cuando no existe el recurso o no pertenece al `userId`.
+
+## Dependencias e inyección
+
+- Inyectar dependencias por constructor; no instanciar servicios o repositorios con `new` dentro de use cases o controladores.
+- Configuración asíncrona (p. ej. TypeORM, Throttler): extraer a `config/` con `registerAs` y en módulos usar `useFactory` + `inject` (como en `DatabaseModule` con `ConfigService`).
+
+## Servicios y use cases
+
+- **La lógica de negocio vive en los use cases** (inyectan `@InjectRepository(Entity)` u otros use cases). No duplicar lógica en servicios.
+- **Los servicios se crean solo para exponer métodos a otros módulos:** son fachadas que delegan en use cases. Si solo consume el mismo módulo, inyectar el use case directamente; el servicio solo existe cuando otro módulo necesita esa capacidad.
+- Un solo lugar (use case) para cada razón de cambio.
+
+**Ejemplo en el proyecto:** `ExpensesModule` no tiene capa de servicio; el controlador inyecta directamente `CreateExpenseUseCase`, `GetExpenseByIdUseCase`, `ListExpensesUseCase`, `MarkExpenseAsPaidUseCase`. `GenerateScheduleOccurrencesUseCase` (en schedules) usa `expenseRepository` e `incomeRepository` para crear registros con `paidAt: null`.
+
+## Estándares de formato y espaciado (ESLint + Prettier)
+
+Estos estándares están aplicados en `eslint.config.mjs` y `.prettierrc`. El código debe cumplirlos siempre; `npm run lint` y `npm run format` los exigen.
+
+### Prettier
+
+- **`printWidth`:** 140. Líneas largas se parten según las reglas de Prettier.
+- **`endOfLine`:** `auto`. Consistencia de final de línea según el entorno.
+- **Comillas:** comillas simples (`singleQuote: true`). Trailing commas donde aplique.
+- **Arrays:** más de un ítem → un elemento por línea cuando aplique.
+- **Módulos NestJS:** `imports`, `controllers`, `providers` en formato vertical (un ítem por línea), como en `AppModule` y `ExpensesModule`.
+
+### Orden de imports (ESLint `import-x/order`)
+
+- **Grupo 1:** módulos builtin + externos (node_modules). Sin línea en blanco entre ellos.
+- **Línea en blanco obligatoria** entre grupo 1 y grupo 2.
+- **Grupo 2:** código del proyecto: alias `modules/*`, `shared`, `shared/*` y luego imports relativos del mismo módulo.
+- **Dentro de cada grupo:** orden alfabético (case-insensitive).
+- **Path groups:** `modules/**`, `shared`, `shared/**` se tratan como “internal”. No mezclar externos e internos sin la línea en blanco.
+
+### Espaciado alrededor de bloques (ESLint `padding-line-between-statements`)
+
+- **Después de todo bloque:** siempre una línea en blanco entre el cierre `}` de un bloque y la siguiente sentencia. Bloques: `if`, `for`, `while`, `try`/`catch`/`finally`, `switch`, `do`.
+- **Antes de todo bloque:** siempre una línea en blanco entre la sentencia anterior y la apertura del bloque.
+- **Objetivo:** el código no queda “pegado”; después de un `if` (o cualquier bloque) hay espacio visual antes del código siguiente.
+
+### Separación por contexto (estilo Node/PSR-like)
+
+- **Dentro de una función o método:** separar con una línea en blanco cada “bloque lógico” (obtener datos, validar, transformar, persistir, responder). Un nivel de abstracción por bloque; no apilar muchas operaciones seguidas sin respirar.
+- **Entre métodos y funciones:** una línea en blanco entre métodos de una clase y entre funciones a nivel de módulo.
+- **Objetivo:** código legible por bloques, con “aire” entre condicionales y el resto del flujo, alineado con buenas prácticas Node/TypeScript y con el espíritu PSR (PHP) de separación clara.
+
+## Imports (convención del proyecto)
+
+- **Desde `shared`:** usar alias `shared` o `shared/*`. Ejemplos: `from 'shared/constants/currency.constants'`, `from 'shared/decorators/current-user-id.decorator'`.
+- **Desde otro módulo:** usar alias `modules/<nombre>`. Ejemplos: `from 'modules/users'`, `from 'modules/categories'` (exporta también `CATEGORY_TYPES`, `CategoryType`), `from 'modules/reports'` (exporta `REPORT_PERIODS`, `ReportPeriod`), `from 'modules/schedules'` (exporta `RECURRENCE_UNITS`, `RecurrenceUnit`). El módulo exporta vía `index.ts` lo que otros consumen.
+- **Dentro del mismo módulo:** solo rutas relativas y **máximo dos niveles** (`../` o `../../`). Ejemplos: `from '../dto/request/expense-create.request'`, `from '../entities/expense.entity'`, `from '../../entities/expense.entity'` (desde `dto/response/`).
+- **Config y database desde raíz de src:** relativos cortos: `from './config'`, `from '../config'` (desde `database/`).
+- **Orden obligatorio (ESLint `import-x/order`):** (1) Módulos externos (builtin + node_modules). (2) Línea en blanco. (3) Código del proyecto: alias (`modules/*`, `shared`, `shared/*`) y luego relativos del mismo módulo. Dentro de cada grupo, orden alfabético. No mezclar externos e internos sin la línea en blanco.
+
+## Contratos por módulo
+
+- **Cada módulo tiene una carpeta `contracts/`** donde van **todas** las interfaces y tipos que definen la API del módulo (entradas/salidas de use cases, servicios y parámetros de respuesta).
+- **Un contrato por archivo:** cada archivo en `contracts/` exporta **una sola** `interface` o `type` (p. ej. `login-result.interface.ts`, `create-expense-from-schedule.interface.ts`).
+- Los contratos se **exportan en el `index.ts`** del módulo para que otros módulos consuman la API vía contrato, sin depender de implementaciones.
+- Nombres descriptivos: `XxxResult` para retornos de use case/servicio, `XxxInput` para entradas, `XxxParams` para parámetros de constructores si aplica.
+
+## Un tipo de declaración por archivo
+
+- **Prohibido mezclar** en el mismo archivo: `const` + `class`, `interface`/`type` + `class`, `const` + `interface`. Cada archivo debe contener **solo un tipo de declaración**.
+- **Contracts** → carpeta `contracts/`, un archivo por interfaz o tipo (p. ej. `contracts/login-result.interface.ts`).
+- **Constantes** → carpeta `constants/`, archivos `*.constants.ts` (un archivo por conjunto de constantes relacionadas).
+- **Clases** → un archivo por clase (entidades, DTOs, controladores, use cases, servicios). Sin interfaces ni constantes en el mismo archivo.
+- **Funciones puras** → archivos `*.util.ts` o `*.helpers.ts`.
+- Los barrels (`index.ts`) pueden reexportar; no cuentan como mezcla.
+
+## Controladores y respuestas
+
+- **Cada endpoint debe devolver una clase de respuesta o status 204 No Content.** No devolver entidades ni objetos crudos. Con cuerpo: `return new XxxResponse(entity)`. Sin cuerpo: `@HttpCode(HttpStatus.NO_CONTENT)` y `return` (void).
+- Los **use cases** trabajan con entidades o interfaces de dominio; las clases de respuesta son responsabilidad de la capa de controlador.
+
+**Ejemplo en el proyecto:** `ExpenseController` devuelve `ExpenseResponse` en POST y GET; en `PATCH ':expenseId/paid'` devuelve 204 con `@HttpCode(HttpStatus.NO_CONTENT)`. `ExpenseResponse` recibe la entidad en el constructor y mapea a campos planos (incluyendo `paidAt` como ISO string o null).
+
+## Nombres Request / Response
+
+- **Parámetros de entrada:** llamar siempre **request** (no `body`, `dto`, `query`). Tipar con clases: **XxxCreateRequest** / **XxxUpdateRequest** para `@Body()`. Para listados paginados se usará **PaginationQueryDto** (parseado con pipe), no DTOs lineales por recurso.
+- **Respuestas:** tipo/clase **XxxResponse** (no sufijo "Dto" en el nombre).
+
+**Ejemplo en el proyecto:** `ExpenseCreateRequest`, `ScheduleCreateRequest`, `CategoryCreateRequest`; `ExpenseResponse`, `ScheduleResponse`, `CategoryResponse`.
+
+## Semántica HTTP (verbos y respuestas)
+
+- **GET** — Obtener: responde con objeto(s) de respuesta. Status 200 (o 204 solo si no hay contenido).
+- **POST** — Crear: responde **201 Created** y con el objeto creado. No devolver payloads tipo `{ added: true }`.
+- **PUT** — Actualizar todo el objeto: responde **204 No Content** o con el objeto actualizado, según necesidad.
+- **PATCH** — Actualización parcial: responde **204 No Content** o con el objeto actualizado. En este proyecto, PATCH se usa para acciones como “marcar como pagado” (p. ej. `PATCH expenses/:expenseId/paid`).
+- **DELETE** — Eliminar: responde **204 No Content**. No devolver cuerpo indicando “eliminado”.
+
+## Rutas REST (coherencia)
+
+- **Cuando un recurso pertenece a un “padre”, la ruta debe partir del padre:** `recursoPadre/:id/recursoHijo`. En este proyecto: `expenses/:expenseId/paid`, `incomes/:incomeId/paid`; si en el futuro hay subrecursos (p. ej. categorías por usuario), mantener el mismo criterio.
+- Usar el mismo nombre de parámetro para el padre en todo el módulo (p. ej. `:expenseId`, `:incomeId`, `:scheduleId`).
+- Rutas en plural para colecciones: `expenses`, `incomes`, `schedules`, `categories`.
+
+## Estructura de módulos (plana)
+
+- Estructura **plana** por módulo (sin subcarpetas por recurso). Carpetas permitidas:
+  - **`contracts/`** — interfaces y tipos del módulo (un archivo por contrato). Se exportan en `index.ts` para que otros módulos dependan de contratos, no de implementaciones.
+  - **`use-cases/`** — todos los use cases del módulo (una clase por archivo; inputs/outputs tipados con contratos).
+  - **`services/`** — solo si se exponen servicios a otros módulos.
+  - **`dto/request/`** — DTOs de entrada (clases para `@Body()`, etc.): `expense-create.request.ts`, `schedule-create.request.ts`.
+  - **`dto/response/`** — DTOs de respuesta (clases): `expense.response.ts`, `schedule.response.ts`.
+  - **`controllers/`** — un controlador por recurso.
+  - **`entities/`** — entidades TypeORM.
+  - **`constants/`** — constantes del módulo (un archivo por conjunto).
+  - **`index.ts`** — exportar módulo, servicios, entidades (si aplica) y **contratos** que otros módulos consuman.
+- **No** carpeta `repositories/`: usar el `Repository<Entity>` de TypeORM directamente en los use cases.
+- **No** carpeta `interfaces/` como nombre genérico: usar **`contracts/`** para interfaces y tipos.
+- **No** carpetas anidadas por recurso; todo a nivel del módulo.
+- **Módulos de NestJS que requieren `.forRoot()`:** registrarlos **solo en el módulo que los usa**, no en `AppModule`. Ese módulo importa `ScheduleModule.forRoot()`, `TypeOrmModule.forFeature(...)` y los demás módulos cuyos servicios consume (p. ej. `SchedulesModule` importa `ScheduleModule.forRoot()`, `ExpensesModule`, `IncomeModule`).
+
+## Repositorios y TypeORM
+
+- **No usar capas de repositorio propias:** usar el **Repository de TypeORM** directamente en los use cases inyectando `@InjectRepository(Entity)` y el `Repository<Entity>` correspondiente.
+- **Create y save separados:** no anidar `repository.create()` dentro de `repository.save()`. Primero crear la entidad en una variable, luego guardarla. Ejemplo (como en `CreateExpenseUseCase`): `const expense = this.expenseRepository.create({ ... }); return this.expenseRepository.save(expense);`.
+- **Listados paginados (cuando se implementen):** usar la abstracción compartida con **PaginationQueryDto** y **PaginationConfig**; no implementar cursor/filtros/orden a mano en cada módulo.
+
+## Paginación (cursor, respuesta única) — cuando aplique
+
+- **Estructura de respuesta:** siempre **`{ data, meta }`** con **PaginationResponse\<T\>** y `meta`: `hasNextPage`, `hasPreviousPage`, `nextCursor`, `previousCursor`, `limit`.
+- **Query parseada:** controlador usa **ParsePaginationQueryPipe** sobre `@Query()` y recibe **PaginationQueryDto**. No DTOs lineales por recurso.
+- **Use case:** recibe **PaginationQueryDto** y devuelve **PaginationResult\<Entity\>**. El controlador construye `new PaginationResponse(result.data.map(e => new XxxResponse(e)), result.meta)`.
+
+## Guards globales y rutas públicas — cuando aplique
+
+- **JwtAuthGuard** y **RolesGuard** como guards globales; todas las rutas requieren JWT por defecto.
+- Para rutas **públicas** usar el decorador **`@Public()`**. No repetir `@UseGuards(JwtAuthGuard, RolesGuard)` en cada ruta protegida.
+- Las rutas que necesiten roles o permisos usan solo `@RequirePermissions()`; la protección JWT ya es global.
+
+En el estado actual del proyecto, el **tenant/user** se obtiene con el decorador **`CurrentUserId`** (de `shared/decorators/current-user-id.decorator.ts`); cuando se integre JWT, el guard deberá poblar `request.user` para que ese decorador devuelva el `id` correcto.
