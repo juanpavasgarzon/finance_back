@@ -1,9 +1,8 @@
+import * as path from 'path';
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ConfigModule, ConfigService } from '../config';
-
-const isCompiled = __filename.endsWith('.js');
 
 @Global()
 @Module({
@@ -20,8 +19,8 @@ const isCompiled = __filename.endsWith('.js');
         database: config.get<string>('database.database'),
         logging: config.get<boolean>('database.logging'),
         autoLoadEntities: true,
-        migrations: isCompiled ? ['dist/database/migrations/*.js'] : ['src/database/migrations/*.ts'],
-        migrationsRun: true,
+        migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
+        migrationsRun: config.get<string>('app.nodeEnv') === 'production',
         synchronize: false,
       }),
     }),

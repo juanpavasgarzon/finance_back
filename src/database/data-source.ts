@@ -1,7 +1,6 @@
 import 'dotenv/config';
+import * as path from 'path';
 import { DataSource, type DataSourceOptions } from 'typeorm';
-
-const isCompiled = __filename.endsWith('.js');
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -10,8 +9,8 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  entities: isCompiled ? ['dist/**/*.entity.js'] : ['src/**/*.entity.ts'],
-  migrations: isCompiled ? ['dist/database/migrations/*.js'] : ['src/database/migrations/*.ts'],
+  entities: [path.join(__dirname, '..', '**', '*.entity.{ts,js}')],
+  migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
   synchronize: false,
 };
 
