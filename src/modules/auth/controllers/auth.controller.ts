@@ -16,10 +16,12 @@ import { RegisterUseCase } from '../use-cases/register.use-case';
 
 const COOKIE_NAME = 'finance_token';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: false,
-  sameSite: 'lax' as const,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' as const : 'lax' as const,
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
