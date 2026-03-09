@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 
 import { CurrentTenantId } from 'shared';
 
 import { IncomeCreateRequest } from '../dto/request/income-create.request';
 import { IncomeResponse } from '../dto/response/income.response';
 import { CreateIncomeUseCase } from '../use-cases/create-income.use-case';
+import { DeleteIncomeUseCase } from '../use-cases/delete-income.use-case';
 import { GetIncomeByIdUseCase } from '../use-cases/get-income-by-id.use-case';
 import { ListIncomesUseCase } from '../use-cases/list-incomes.use-case';
 import { MarkIncomeAsPaidUseCase } from '../use-cases/mark-income-as-paid.use-case';
@@ -13,6 +14,7 @@ import { MarkIncomeAsPaidUseCase } from '../use-cases/mark-income-as-paid.use-ca
 export class IncomeController {
   constructor(
     private readonly createIncomeUseCase: CreateIncomeUseCase,
+    private readonly deleteIncomeUseCase: DeleteIncomeUseCase,
     private readonly getIncomeByIdUseCase: GetIncomeByIdUseCase,
     private readonly listIncomesUseCase: ListIncomesUseCase,
     private readonly markIncomeAsPaidUseCase: MarkIncomeAsPaidUseCase,
@@ -23,8 +25,8 @@ export class IncomeController {
     const income = await this.createIncomeUseCase.execute({
       tenantId,
       categoryId: request.categoryId,
+      name: request.name,
       amount: String(request.amount),
-      currencyCode: request.currencyCode,
       description: request.description,
       dueDate: request.dueDate ? new Date(request.dueDate) : undefined,
       scheduleId: request.scheduleId,
@@ -45,8 +47,14 @@ export class IncomeController {
   }
 
   @Patch(':incomeId/paid')
+  async markAsPaid(@CurrentTenantId() tenantId: string, @Param('incomeId') incomeId: string): Promise<IncomeResponse> {
+    const income = await this.markIncomeAsPaidUseCase.execute(incomeId, tenantId);
+    return new IncomeResponse(income);
+  }
+
+  @Delete(':incomeId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async markAsPaid(@CurrentTenantId() tenantId: string, @Param('incomeId') incomeId: string): Promise<void> {
-    await this.markIncomeAsPaidUseCase.execute(incomeId, tenantId);
+  async remove(@CurrentTenantId() tenantId: string, @Param('incomeId') incomeId: string): Promise<void> {
+    await this.deleteIncomeUseCase.execute(tenantId, incomeId);
   }
 }

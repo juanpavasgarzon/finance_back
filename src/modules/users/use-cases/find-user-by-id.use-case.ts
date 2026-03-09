@@ -5,13 +5,13 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 
 @Injectable()
-export class FindUserByEmailUseCase {
+export class FindUserByIdUseCase {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async execute(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email } });
+  async execute(id: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { id } });
   }
 }

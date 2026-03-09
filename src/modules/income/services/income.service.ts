@@ -16,8 +16,8 @@ export class IncomeService {
     await this.createIncomeUseCase.execute({
       tenantId: input.tenantId,
       categoryId: input.categoryId,
+      name: input.name,
       amount: input.amount,
-      currencyCode: input.currencyCode,
       scheduleId: input.scheduleId,
       description: input.description ?? undefined,
       dueDate: input.dueDate,
@@ -28,9 +28,9 @@ export class IncomeService {
     const incomes = await this.listIncomesUseCase.execute(tenantId);
     return incomes.map((i) => ({
       categoryId: i.categoryId,
-      categoryName: i.category?.name ?? 'Sin categoría',
+      categoryName: i.category?.name ?? 'Sin categor\u00eda',
+      name: i.name,
       amount: i.amount,
-      currencyCode: i.currencyCode,
       paidAt: i.paidAt,
       dueDate: i.dueDate,
       createdAt: i.createdAt,

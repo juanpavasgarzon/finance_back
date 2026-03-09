@@ -7,7 +7,6 @@ export class DashboardSummaryResponse {
   totalIncome: number;
   totalExpenses: number;
   balance: number;
-  currencyCode: string;
 
   constructor(params: DashboardSummaryParams) {
     this.period = params.period;
@@ -16,6 +15,5 @@ export class DashboardSummaryResponse {
     this.totalIncome = params.totalIncome;
     this.totalExpenses = params.totalExpenses;
     this.balance = params.balance;
-    this.currencyCode = params.currencyCode;
   }
 }

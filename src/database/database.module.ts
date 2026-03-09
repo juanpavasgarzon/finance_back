@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ConfigModule, ConfigService } from '../config';
 
+const isCompiled = __filename.endsWith('.js');
+
 @Global()
 @Module({
   imports: [
@@ -18,7 +20,8 @@ import { ConfigModule, ConfigService } from '../config';
         database: config.get<string>('database.database'),
         logging: config.get<boolean>('database.logging'),
         autoLoadEntities: true,
-        migrations: ['dist/database/migrations/*.js'],
+        migrations: isCompiled ? ['dist/database/migrations/*.js'] : ['src/database/migrations/*.ts'],
+        migrationsRun: true,
         synchronize: false,
       }),
     }),

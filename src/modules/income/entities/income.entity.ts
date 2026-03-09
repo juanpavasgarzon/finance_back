@@ -3,8 +3,6 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGenerat
 import { Category } from 'modules/categories';
 import { User } from 'modules/users';
 
-import type { CurrencyCode } from 'shared/constants/currency.constants';
-
 @Entity('incomes')
 export class Income {
   @PrimaryGeneratedColumn('uuid')
@@ -24,11 +22,11 @@ export class Income {
   @JoinColumn({ name: 'categoryId' })
   category: Category;
 
+  @Column({ type: 'varchar', length: 200 })
+  name: string;
+
   @Column({ type: 'decimal', precision: 14, scale: 2 })
   amount: string;
-
-  @Column({ type: 'varchar', length: 3 })
-  currencyCode: CurrencyCode;
 
   @Column({ type: 'timestamptz', nullable: true })
   paidAt: Date | null;

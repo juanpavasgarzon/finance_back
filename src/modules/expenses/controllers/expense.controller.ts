@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 
 import { CurrentTenantId } from 'shared';
 
 import { ExpenseCreateRequest } from '../dto/request/expense-create.request';
 import { ExpenseResponse } from '../dto/response/expense.response';
 import { CreateExpenseUseCase } from '../use-cases/create-expense.use-case';
+import { DeleteExpenseUseCase } from '../use-cases/delete-expense.use-case';
 import { GetExpenseByIdUseCase } from '../use-cases/get-expense-by-id.use-case';
 import { ListExpensesUseCase } from '../use-cases/list-expenses.use-case';
 import { MarkExpenseAsPaidUseCase } from '../use-cases/mark-expense-as-paid.use-case';
@@ -13,6 +14,7 @@ import { MarkExpenseAsPaidUseCase } from '../use-cases/mark-expense-as-paid.use-
 export class ExpenseController {
   constructor(
     private readonly createExpenseUseCase: CreateExpenseUseCase,
+    private readonly deleteExpenseUseCase: DeleteExpenseUseCase,
     private readonly getExpenseByIdUseCase: GetExpenseByIdUseCase,
     private readonly listExpensesUseCase: ListExpensesUseCase,
     private readonly markExpenseAsPaidUseCase: MarkExpenseAsPaidUseCase,
@@ -23,8 +25,8 @@ export class ExpenseController {
     const expense = await this.createExpenseUseCase.execute({
       tenantId,
       categoryId: request.categoryId,
+      name: request.name,
       amount: String(request.amount),
-      currencyCode: request.currencyCode,
       description: request.description,
       dueDate: request.dueDate ? new Date(request.dueDate) : undefined,
       scheduleId: request.scheduleId,
@@ -45,8 +47,14 @@ export class ExpenseController {
   }
 
   @Patch(':expenseId/paid')
+  async markAsPaid(@CurrentTenantId() tenantId: string, @Param('expenseId') expenseId: string): Promise<ExpenseResponse> {
+    const expense = await this.markExpenseAsPaidUseCase.execute(expenseId, tenantId);
+    return new ExpenseResponse(expense);
+  }
+
+  @Delete(':expenseId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async markAsPaid(@CurrentTenantId() tenantId: string, @Param('expenseId') expenseId: string): Promise<void> {
-    await this.markExpenseAsPaidUseCase.execute(expenseId, tenantId);
+  async remove(@CurrentTenantId() tenantId: string, @Param('expenseId') expenseId: string): Promise<void> {
+    await this.deleteExpenseUseCase.execute(tenantId, expenseId);
   }
 }

@@ -13,8 +13,8 @@ export class LoginUseCase {
     private readonly jwtService: JwtService,
   ) {}
 
-  async execute(email: string, password: string): Promise<LoginResult> {
-    const result = await this.usersService.validateCredentials(email, password);
+  async execute(username: string, password: string): Promise<LoginResult> {
+    const result = await this.usersService.validateCredentials(username, password);
     if (!result) {
       throw new UnauthorizedException('Invalid credentials');
     }

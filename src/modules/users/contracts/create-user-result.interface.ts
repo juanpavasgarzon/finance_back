@@ -1,4 +1,5 @@
 export interface CreateUserResult {
   id: string;
-  email: string;
+  username: string;
+  country: string;
 }

@@ -16,8 +16,8 @@ export class ExpensesService {
     await this.createExpenseUseCase.execute({
       tenantId: input.tenantId,
       categoryId: input.categoryId,
+      name: input.name,
       amount: input.amount,
-      currencyCode: input.currencyCode,
       scheduleId: input.scheduleId,
       description: input.description ?? undefined,
       dueDate: input.dueDate,
@@ -28,9 +28,9 @@ export class ExpensesService {
     const expenses = await this.listExpensesUseCase.execute(tenantId);
     return expenses.map((e) => ({
       categoryId: e.categoryId,
-      categoryName: e.category?.name ?? 'Sin categoría',
+      categoryName: e.category?.name ?? 'Sin categor\u00eda',
+      name: e.name,
       amount: e.amount,
-      currencyCode: e.currencyCode,
       paidAt: e.paidAt,
       dueDate: e.dueDate,
       createdAt: e.createdAt,

@@ -20,7 +20,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   handleConnection(client: Socket): void {
     const auth = client.handshake.auth as Record<string, unknown>;
     const query = client.handshake.query as Record<string, unknown>;
-    const token = auth?.token ?? query?.token ?? undefined;
+    const cookies = this.parseCookies(client.handshake.headers.cookie ?? '');
+    const token = cookies.finance_token ?? auth?.token ?? query?.token ?? undefined;
     if (!token) {
       this.logger.warn(`Client ${client.id} connected without token`);
       client.disconnect();
@@ -56,5 +57,20 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   private tenantRoom(tenantId: string): string {
     return `tenant_${tenantId}`;
+  }
+
+  private parseCookies(cookieHeader: string): Record<string, string> {
+    const result: Record<string, string> = {};
+
+    cookieHeader.split(';').forEach((pair) => {
+      const idx = pair.indexOf('=');
+
+      if (idx > 0) {
+        const key = pair.substring(0, idx).trim();
+        result[key] = pair.substring(idx + 1).trim();
+      }
+    });
+
+    return result;
   }
 }

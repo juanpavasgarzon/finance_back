@@ -1,17 +1,16 @@
-import { IsDateString, IsIn, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
-
-import { CURRENCY_CODES } from 'shared/constants/currency.constants';
+import { IsDateString, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 
 export class IncomeCreateRequest {
   @IsUUID()
   categoryId: string;
 
+  @IsString()
+  @MaxLength(200)
+  name: string;
+
   @IsNumber()
   @Min(0.01)
   amount: number;
-
-  @IsIn(CURRENCY_CODES)
-  currencyCode: (typeof CURRENCY_CODES)[number];
 
   @IsOptional()
   @IsString()
