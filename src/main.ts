@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import compression from 'compression';
-import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import type { HelmetOptions } from 'helmet';
 
@@ -28,15 +27,10 @@ async function bootstrap(): Promise<void> {
   };
   app.use(helmet(helmetOptions));
   app.use(compression());
-  app.use(cookieParser());
 
   app.use(httpRequestLogger);
 
-  const corsOrigin = config.get<string>('app.corsOrigin');
-  app.enableCors({
-    origin: corsOrigin,
-    credentials: true,
-  });
+  app.enableCors({ origin: '*' });
 
   const validationPipeOptions = new ValidationPipe({
     transform: true,
