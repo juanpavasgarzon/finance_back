@@ -11,8 +11,8 @@ export class RegisterUseCase {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async execute(email: string, password: string): Promise<CreateUserResult> {
-    const user = await this.usersService.createUser(email, password);
+  async execute(username: string, password: string, country?: string): Promise<CreateUserResult> {
+    const user = await this.usersService.createUser(username, password, country);
 
     await this.notificationsService.notify({
       tenantId: user.id,

@@ -3,38 +3,38 @@ import type { ReportPeriod } from '../contracts/report-period.types';
 
 function startOfDay(date: Date): Date {
   const d = new Date(date);
-  d.setUTCHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function endOfDay(date: Date): Date {
   const d = new Date(date);
-  d.setUTCHours(23, 59, 59, 999);
+  d.setHours(23, 59, 59, 999);
   return d;
 }
 
 function startOfMonth(date: Date): Date {
   const d = new Date(date);
-  d.setUTCDate(1);
+  d.setDate(1);
   return startOfDay(d);
 }
 
 function endOfMonth(date: Date): Date {
   const d = new Date(date);
-  d.setUTCMonth(d.getUTCMonth() + 1);
-  d.setUTCDate(0);
+  d.setMonth(d.getMonth() + 1);
+  d.setDate(0);
   return endOfDay(d);
 }
 
 function startOfYear(date: Date): Date {
   const d = new Date(date);
-  d.setUTCMonth(0, 1);
+  d.setMonth(0, 1);
   return startOfDay(d);
 }
 
 function endOfYear(date: Date): Date {
   const d = new Date(date);
-  d.setUTCMonth(11, 31);
+  d.setMonth(11, 31);
   return endOfDay(d);
 }
 
@@ -44,13 +44,13 @@ export function getDateRangeForPeriod(period: ReportPeriod, referenceDate: Date)
   switch (period) {
     case 'WEEKLY': {
       const start = new Date(ref);
-      start.setUTCDate(start.getUTCDate() - 6);
+      start.setDate(start.getDate() - 6);
       return { start: startOfDay(start), end: endOfDay(ref) };
     }
 
     case 'BIWEEKLY': {
       const start = new Date(ref);
-      start.setUTCDate(start.getUTCDate() - 13);
+      start.setDate(start.getDate() - 13);
       return { start: startOfDay(start), end: endOfDay(ref) };
     }
 
@@ -67,7 +67,7 @@ export function getDateRangeForPeriod(period: ReportPeriod, referenceDate: Date)
 
     default: {
       const start = new Date(ref);
-      start.setUTCDate(start.getUTCDate() - 6);
+      start.setDate(start.getDate() - 6);
       return { start: startOfDay(start), end: endOfDay(ref) };
     }
   }

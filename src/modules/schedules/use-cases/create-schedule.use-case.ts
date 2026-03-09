@@ -17,11 +17,13 @@ export class CreateScheduleUseCase {
       tenantId: input.tenantId,
       categoryId: input.categoryId,
       type: input.type,
+      name: input.name,
       amount: input.amount,
-      currencyCode: input.currencyCode,
       recurrenceInterval: input.recurrenceInterval,
       recurrenceUnit: input.recurrenceUnit,
       nextDueDate: input.nextDueDate,
+      startDate: input.startDate,
+      endDate: input.endDate ?? null,
       description: input.description ?? null,
     });
     return this.scheduleRepository.save(schedule);

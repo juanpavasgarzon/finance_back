@@ -4,8 +4,6 @@ import type { CategoryType } from 'modules/categories';
 import { Category } from 'modules/categories';
 import { User } from 'modules/users';
 
-import type { CurrencyCode } from 'shared/constants/currency.constants';
-
 import type { RecurrenceUnit } from '../contracts/recurrence-unit.types';
 
 @Entity('schedules')
@@ -30,11 +28,11 @@ export class Schedule {
   @Column({ type: 'varchar', length: 20 })
   type: CategoryType;
 
+  @Column({ type: 'varchar', length: 200 })
+  name: string;
+
   @Column({ type: 'decimal', precision: 14, scale: 2 })
   amount: string;
-
-  @Column({ type: 'varchar', length: 3 })
-  currencyCode: CurrencyCode;
 
   @Column({ type: 'int' })
   recurrenceInterval: number;
@@ -44,6 +42,12 @@ export class Schedule {
 
   @Column({ type: 'date' })
   nextDueDate: Date;
+
+  @Column({ type: 'date' })
+  startDate: Date;
+
+  @Column({ type: 'date', nullable: true })
+  endDate: Date | null;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   description: string | null;

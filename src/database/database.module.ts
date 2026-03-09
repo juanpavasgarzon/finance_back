@@ -20,6 +20,7 @@ import { ConfigModule, ConfigService } from '../config';
         autoLoadEntities: true,
         migrations: ['dist/database/migrations/*.js'],
         synchronize: false,
+        runMigrations: true,
       }),
     }),
   ],

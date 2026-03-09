@@ -16,9 +16,9 @@ export class CreateIncomeUseCase {
     const income = this.incomeRepository.create({
       tenantId: input.tenantId,
       categoryId: input.categoryId,
+      name: input.name,
       amount: input.amount,
-      currencyCode: input.currencyCode,
-      paidAt: null,
+      paidAt: input.scheduleId ? null : input.paidAt !== undefined ? input.paidAt : new Date(),
       scheduleId: input.scheduleId ?? null,
       description: input.description ?? null,
       dueDate: input.dueDate ?? null,

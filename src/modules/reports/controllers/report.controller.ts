@@ -9,6 +9,12 @@ import { GetDashboardDataUseCase } from '../use-cases/get-dashboard-data.use-cas
 
 const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+/** Parse a date-only string (YYYY-MM-DD) as local time instead of UTC. */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 @Controller('reports')
 export class ReportController {
   constructor(
@@ -18,7 +24,7 @@ export class ReportController {
 
   @Get('dashboard')
   async getDashboard(@CurrentTenantId() tenantId: string, @Query() query: FinancialReportQueryRequest): Promise<DashboardResponse> {
-    const referenceDate = query.date ? new Date(query.date) : new Date();
+    const referenceDate = query.date ? parseLocalDate(query.date) : new Date();
     return this.getDashboardDataUseCase.execute({
       tenantId,
       period: query.period,
@@ -28,7 +34,7 @@ export class ReportController {
 
   @Get('financial/excel')
   async getFinancialExcel(@CurrentTenantId() tenantId: string, @Query() query: FinancialReportQueryRequest): Promise<StreamableFile> {
-    const referenceDate = query.date ? new Date(query.date) : new Date();
+    const referenceDate = query.date ? parseLocalDate(query.date) : new Date();
     const buffer = await this.exportFinancialExcelUseCase.execute({
       tenantId,
       period: query.period,

@@ -40,19 +40,21 @@ export class GenerateScheduleOccurrencesUseCase {
         const input: CreateExpenseFromScheduleInput = {
           tenantId: schedule.tenantId,
           categoryId: schedule.categoryId,
+          name: schedule.name,
           amount: schedule.amount,
-          currencyCode: schedule.currencyCode,
           scheduleId: schedule.id,
           description: schedule.description,
           dueDate,
         };
         await this.expensesService.createFromSchedule(input);
-      } else {
+      }
+
+      if (schedule.type !== 'EXPENSE') {
         const input: CreateIncomeFromScheduleInput = {
           tenantId: schedule.tenantId,
           categoryId: schedule.categoryId,
+          name: schedule.name,
           amount: schedule.amount,
-          currencyCode: schedule.currencyCode,
           scheduleId: schedule.id,
           description: schedule.description,
           dueDate,
@@ -85,19 +87,21 @@ export class GenerateScheduleOccurrencesUseCase {
         const input: CreateExpenseFromScheduleInput = {
           tenantId: schedule.tenantId,
           categoryId: schedule.categoryId,
+          name: schedule.name,
           amount: schedule.amount,
-          currencyCode: schedule.currencyCode,
           scheduleId: schedule.id,
           description: schedule.description,
           dueDate,
         };
         await this.expensesService.createFromSchedule(input);
-      } else {
+      }
+
+      if (schedule.type !== 'EXPENSE') {
         const input: CreateIncomeFromScheduleInput = {
           tenantId: schedule.tenantId,
           categoryId: schedule.categoryId,
+          name: schedule.name,
           amount: schedule.amount,
-          currencyCode: schedule.currencyCode,
           scheduleId: schedule.id,
           description: schedule.description,
           dueDate,
@@ -127,14 +131,16 @@ export class GenerateScheduleOccurrencesUseCase {
       };
       if (schedule.type === 'EXPENSE') {
         current.expenseCount += 1;
-      } else {
+      }
+
+      if (schedule.type !== 'EXPENSE') {
         current.incomeCount += 1;
       }
 
       byTenant.set(schedule.tenantId, current);
     }
 
-    for (const [tenantId, counts] of byTenant) {
+    for (const [tid, counts] of byTenant) {
       const parts: string[] = [];
       if (counts.expenseCount > 0) {
         parts.push(counts.expenseCount === 1 ? '1 expense' : `${counts.expenseCount} expenses`);
@@ -147,7 +153,7 @@ export class GenerateScheduleOccurrencesUseCase {
       const message = parts.length > 0 ? `Generated ${parts.join(' and ')} from your schedules.` : null;
 
       await this.notificationsService.notify({
-        tenantId,
+        tenantId: tid,
         code: SCHEDULE_EXECUTED,
         title: 'Schedules executed',
         message,

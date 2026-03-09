@@ -5,5 +5,4 @@ export interface DashboardSummaryParams {
   totalIncome: number;
   totalExpenses: number;
   balance: number;
-  currencyCode: string;
 }

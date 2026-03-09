@@ -3,8 +3,6 @@ import { IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, MaxL
 import { CATEGORY_TYPES } from 'modules/categories';
 import { RECURRENCE_UNITS } from 'modules/schedules';
 
-import { CURRENCY_CODES } from 'shared/constants/currency.constants';
-
 export class ScheduleCreateRequest {
   @IsUUID()
   categoryId: string;
@@ -12,12 +10,13 @@ export class ScheduleCreateRequest {
   @IsIn(CATEGORY_TYPES)
   type: (typeof CATEGORY_TYPES)[number];
 
+  @IsString()
+  @MaxLength(200)
+  name: string;
+
   @IsNumber()
   @Min(0.01)
   amount: number;
-
-  @IsIn(CURRENCY_CODES)
-  currencyCode: (typeof CURRENCY_CODES)[number];
 
   @IsInt()
   @Min(1)
@@ -28,6 +27,13 @@ export class ScheduleCreateRequest {
 
   @IsDateString()
   nextDueDate: string;
+
+  @IsDateString()
+  startDate: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 
   @IsOptional()
   @IsString()

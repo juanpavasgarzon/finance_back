@@ -5,6 +5,7 @@ import { CategoriesModule } from 'modules/categories';
 import { ExpensesModule } from 'modules/expenses';
 import { IncomeModule } from 'modules/income';
 import { NotificationsModule } from 'modules/notifications/notifications.module';
+import { PlannerModule } from 'modules/planner';
 import { ReportsModule } from 'modules/reports';
 import { SchedulesModule } from 'modules/schedules';
 import { UsersModule } from 'modules/users';
@@ -22,6 +23,7 @@ import { DatabaseModule } from './database';
     ExpensesModule,
     IncomeModule,
     NotificationsModule,
+    PlannerModule,
     ReportsModule,
     SchedulesModule,
   ],

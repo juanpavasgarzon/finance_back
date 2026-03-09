@@ -47,11 +47,9 @@ export class GetDashboardDataUseCase {
     const expenses = expensesRaw.filter((e) => inRange(effectiveDate(e), range));
     const incomes = incomesRaw.filter((e) => inRange(effectiveDate(e), range));
 
-    const totalIncome = incomes.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    const totalIncome = incomes.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
     const balance = totalIncome - totalExpenses;
-    const currencies = new Set([...expenses.map((e) => e.currencyCode), ...incomes.map((i) => i.currencyCode)]);
-    const summaryCurrency = currencies.size === 1 ? Array.from(currencies)[0] : 'MIXED';
 
     const expensesByCategory = this.aggregateByCategory(expenses);
     const incomesByCategory = this.aggregateByCategory(incomes);
@@ -63,7 +61,6 @@ export class GetDashboardDataUseCase {
       totalIncome,
       totalExpenses,
       balance,
-      currencyCode: summaryCurrency,
     });
 
     return new DashboardResponse({
@@ -74,21 +71,22 @@ export class GetDashboardDataUseCase {
   }
 
   private aggregateByCategory(items: CategoryAggregateItem[]): CategoryBreakdownItemResponse[] {
-    const map = new Map<string, { name: string; total: number; currencyCode: string; count: number }>();
+    const map = new Map<string, { name: string; total: number; count: number }>();
 
     for (const item of items) {
       const key = item.categoryId;
       const existing = map.get(key);
-      const amount = parseFloat(item.amount);
+      const amount = parseFloat(item.amount) || 0;
       const name = item.categoryName;
       if (!existing) {
         map.set(key, {
           name,
           total: amount,
-          currencyCode: item.currencyCode,
           count: 1,
         });
-      } else {
+      }
+
+      if (existing) {
         existing.total += amount;
         existing.count += 1;
       }
@@ -100,7 +98,6 @@ export class GetDashboardDataUseCase {
           categoryId,
           categoryName: value.name,
           total: value.total,
-          currencyCode: value.currencyCode,
           count: value.count,
         }),
     );
